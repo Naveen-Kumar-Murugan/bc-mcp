@@ -74,74 +74,68 @@ export default function ChatPage() {
       console.error('Failed to load tools:', error)
     }
   }
-
   const sendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return
+  if (!inputValue.trim() || isLoading) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: inputValue,
-      timestamp: new Date(),
-      status: 'sent'
+  const userQuery = inputValue;
+
+  const userMessage: Message = {
+    id: crypto.randomUUID(),
+    role: 'user',
+    content: userQuery,
+    timestamp: new Date(),
+    status: 'sent',
+  };
+
+  setMessages(prev => [...prev, userMessage]);
+  setInputValue('');
+  setIsLoading(true);
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query: userQuery }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to send message');
     }
 
-    setMessages(prev => [...prev, userMessage])
-    setInputValue('')
-    setIsLoading(true)
+    const result = await response.json();
 
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: inputValue,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to send message')
-      }
-
-      const result = await response.json()
-
-      const lastMessage = result.messages[result.messages.length - 1]
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: lastMessage.role,
-        content: lastMessage.content || 'No response received',
-        tool_calls: lastMessage.tool_calls || [],
-        timestamp: new Date(),
-        status: 'sent'
-      }
-
-      setMessages(prev => [...prev, ...result.messages.map((msg: any) => ({
-        id: Date.now().toString(),
+    const assistantMessages: Message[] = result.messages
+      .filter((msg: any) => msg.role !== 'user') // avoid duplicating user message
+      .map((msg: any) => ({
+        id: crypto.randomUUID(),
         role: msg.role,
         content: msg.content,
         tool_calls: msg.tool_calls || [],
         timestamp: new Date(),
-        status: 'sent'
-      }))])
-    } catch (error) {
-      console.error('Error sending message:', error)
-      
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error processing your request.',
-        timestamp: new Date(),
-        status: 'error'
-      }
+        status: 'sent',
+      }));
 
-      setMessages(prev => [...prev, errorMessage])
-    } finally {
-      setIsLoading(false)
-    }
+    setMessages(prev => [...prev, ...assistantMessages]);
+  } catch (error) {
+    console.error('Error sending message:', error);
+
+    const errorMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: 'Sorry, I encountered an error processing your request.',
+      timestamp: new Date(),
+      status: 'error',
+    };
+
+    setMessages(prev => [...prev, errorMessage]);
+  } finally {
+    setIsLoading(false);
   }
+};
+
+
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

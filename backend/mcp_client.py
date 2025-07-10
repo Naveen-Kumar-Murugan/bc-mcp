@@ -19,7 +19,7 @@ from openai.types.chat import ChatCompletion
 class MCPClient:
     _instances = weakref.WeakSet()
     
-    def __init__(self, model_name: str = "anthropic/claude-3.5-haiku"):
+    def __init__(self, model_name: str = "deepseek/deepseek-chat-v3-0324:free"):
         # Initialize session and client objects
         self.session: Optional[ClientSession] = None
         self.stdio = None
