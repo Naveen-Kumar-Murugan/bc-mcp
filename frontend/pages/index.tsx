@@ -68,7 +68,7 @@ export default function ChatPage() {
       const response = await fetch('/api/tools')
       if (response.ok) {
         const tools = await response.json()
-        setAvailableTools(tools)
+        setAvailableTools(tools.tools)
       }
     } catch (error) {
       console.error('Failed to load tools:', error)
@@ -97,7 +97,7 @@ export default function ChatPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: inputValue,
+          query: inputValue,
         }),
       })
 
@@ -107,16 +107,25 @@ export default function ChatPage() {
 
       const result = await response.json()
 
+      const lastMessage = result.messages[result.messages.length - 1]
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: result.response || 'No response received',
-        tool_calls: result.tool_calls || [],
+        role: lastMessage.role,
+        content: lastMessage.content || 'No response received',
+        tool_calls: lastMessage.tool_calls || [],
         timestamp: new Date(),
         status: 'sent'
       }
 
-      setMessages(prev => [...prev, assistantMessage])
+      setMessages(prev => [...prev, ...result.messages.map((msg: any) => ({
+        id: Date.now().toString(),
+        role: msg.role,
+        content: msg.content,
+        tool_calls: msg.tool_calls || [],
+        timestamp: new Date(),
+        status: 'sent'
+      }))])
     } catch (error) {
       console.error('Error sending message:', error)
       
@@ -179,7 +188,7 @@ export default function ChatPage() {
               {availableTools.length} tools available
             </span>
             <div className="flex space-x-1">
-              {availableTools.slice(0, 3).map((tool, index) => (
+              {availableTools && availableTools.slice(0, 3).map((tool, index) => (
                 <div
                   key={index}
                   className="px-2 py-1 bg-primary-100 text-primary-700 rounded-md text-xs"
