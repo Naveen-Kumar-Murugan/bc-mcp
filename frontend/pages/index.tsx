@@ -1,10 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, use } from 'react'
 import { Send, Bot, User, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
 
 interface ToolCall {
-  tool_name: string
-  arguments: any
-  result: any
+ id: string
+ function: {
+  arguments: string,
+  name: string
+ }
+ type: string
+ index: string
 }
 
 interface Message {
@@ -111,7 +115,7 @@ export default function ChatPage() {
       .map((msg: any) => ({
         id: crypto.randomUUID(),
         role: msg.role,
-        content: msg.content,
+        content: (msg.role!=="tool")?msg.content:`${msg.content.slice(0,250)} .........`,
         tool_calls: msg.tool_calls || [],
         timestamp: new Date(),
         status: 'sent',
@@ -269,7 +273,7 @@ export default function ChatPage() {
                           <div className="flex items-center space-x-2 mb-2">
                             {/* <Tool className="w-4 h-4 text-blue-600" /> */}
                             <span className="font-medium text-blue-900">
-                              {toolCall.tool_name}
+                              {toolCall.function.name}
                             </span>
                             <CheckCircle className="w-4 h-4 text-green-600" />
                           </div>
@@ -278,14 +282,14 @@ export default function ChatPage() {
                             <div>
                               <span className="font-medium text-gray-700">Arguments:</span>
                               <pre className="mt-1 bg-gray-100 p-2 rounded text-xs overflow-x-auto">
-                                {formatArguments(toolCall.arguments)}
+                                {formatArguments(toolCall.function.arguments)}
                               </pre>
                             </div>
                             
                             <div>
                               <span className="font-medium text-gray-700">Result:</span>
                               <pre className="mt-1 bg-gray-100 p-2 rounded text-xs overflow-x-auto">
-                                {formatResult(toolCall.result)}
+                                {formatResult(toolCall)}
                               </pre>
                             </div>
                           </div>
